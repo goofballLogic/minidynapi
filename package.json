@@ -2,14 +2,27 @@
   "name": "minidynapi",
   "version": "0.0.0",
   "description": "Minimal DynamoDB API",
-  "main": "index.js",
+  "main": "src/main.js",
   "scripts": {
-    "test": "gulp test"
+    "test": "gulp test",
+    "start": "node src/main"
   },
   "keywords": [
     "dynamodb",
     "REST"
   ],
   "author": "Andrew Stewart Gibson",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "mocha": "~2.0.1",
+    "gulp": "~3.8.10",
+    "gulp-mocha": "~2.0.0",
+    "chai": "~1.10.0",
+    "gulp-watch": "~1.2.0",
+    "superagent": "~0.21.0",
+    "superstack": "0.0.4"
+  },
+  "dependencies": {
+    "express": "~4.10.2"
+  }
 }
