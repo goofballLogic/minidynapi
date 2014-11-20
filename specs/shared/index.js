@@ -8,9 +8,13 @@ module.exports = {
 	testApp1: require( "./test-app-1" ),
 	agent: require( "./agent" ),
 	fakeDB: fakeDB,
+	once: once,
+	request: require( "./request" ),
 	initServer : function( config, app, entitlements ) {
 
 		beforeEach( function( done ) {
+
+			done = once( done );
 
 			// ensure we have a namespace "ns"
 			config.ns = config.ns || config.name;
@@ -21,7 +25,6 @@ module.exports = {
 			this.testApp = app;
 			// initialize the fake dynamodb agent
 			fakeDB.init( config.ns, app );
-
 			try {
 
 				// create the API
@@ -48,5 +51,28 @@ module.exports = {
 
 		} );
 
+	},
+	linksForSet: function( res, set ) {
+
+		return ( res.body.links || [] ).filter( function( link ) {
+
+			return link.rel == set;
+
+		} );
+
 	}
+
 };
+
+function once( func ) {
+
+	var called = false;
+	return function() {
+
+		if( called ) throw new Error( "Called more than once" );
+		called = true;
+		func.apply( this, arguments );
+
+	};
+
+}

@@ -1,22 +1,25 @@
-var shared = require( "./shared" );
+var sx = require( "./shared" );
 var should = require( "chai" ).should();
 
 describe( "Given the app is configured", function() {
 
-	shared.initServer( shared.testConfig1, shared.testApp1 );
+	sx.initServer( sx.testConfig1, sx.testApp1 );
 
-	describe( "And I am user1", function() {
+	describe( "And I am user1 who is a super user", function() {
 
 		beforeEach( function() {
 
-			shared.fakeDB.fakeEntitlements( this.config.ns, {
+			sx.fakeDB.fakeEntitlements( this.config.ns, {
 
 				"user1" : { "roles" : [ "su" ] },
-				"su" : { "APIGET" : true }
+				"su" : {
+					"APIGET" : true,
+					"sets" : [ { name: /.*/, CRUD: "crud" } ]
+				}
 
 			} );
 			this.headers = this.headers || {};
-			this.headers.Authorization = shared.builder.user1Authorization();
+			this.headers.Authorization = sx.builder.user1Authorization();
 
 		} );
 
@@ -24,19 +27,47 @@ describe( "Given the app is configured", function() {
 
 			beforeEach( function( done ) {
 
-				shared.agent.get( this, this.root, done );
+				sx.agent.get( this, this.root, done );
 
 			} );
 
-			it( "Then it should return GET links for each configured collection", function() {
+			it( "Then it should return 200", function() {
 
 				this.res.status.should.equal( 200, "Wrong status code" );
-				var links = this.res.body.links;
+
+			} );
+
+			it( "Then it should return one link per set", function() {
+
+				var res = this.res;
 				this.testApp.sets.forEach( function( set ) {
 
-					( links || [] )
-						.filter( function( link ) { return set === link.rel; } )
+					sx.linksForSet( res, set )
 						.should.have.length( 1, "Missing link with rel " + set );
+
+				} );
+
+			} );
+
+			it( "Then it should return a GET link for each set", function() {
+
+				var res = this.res;
+				this.testApp.sets.forEach( function( set ) {
+
+					sx.linksForSet( res, set )[ 0 ].verbs
+						.should.contain( "get", "Missing GET verb for set " + set );
+
+				} );
+
+			} );
+
+			it( "Then it should return a POST links for each configured set", function() {
+
+				var res = this.res;
+				this.testApp.sets.forEach( function( set ) {
+
+					sx.linksForSet( res, set )[ 0 ].verbs
+						.should.contain( "post", "Missing POST verb for set " + set );
 
 				} );
 
@@ -45,6 +76,5 @@ describe( "Given the app is configured", function() {
 		} );
 
 	} );
-
 
 } );

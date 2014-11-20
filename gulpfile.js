@@ -1,6 +1,5 @@
 var gulp = require( "gulp" );
 var mocha  = require( "gulp-mocha" );
-var watch = require( "gulp-watch" );
 
 gulp.task( "test", function() {
 
@@ -11,12 +10,7 @@ gulp.task( "test", function() {
 
 gulp.task( "autotest", function() {
 
-
-	watch( "./**/*.js", function( files, cb ) {
-
-		gulp.start( "test", cb );
-
-	} );
+	gulp.watch( [ "./src/**/*.js", "./specs/**/*.js" ], [ "test" ] );
 
 } );
 

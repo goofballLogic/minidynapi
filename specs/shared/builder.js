@@ -4,6 +4,11 @@ module.exports = {
 
 		return "Test user1";
 
+	},
+	user2Authorization: function() {
+
+		return "Test user2";
+
 	}
 
 };
