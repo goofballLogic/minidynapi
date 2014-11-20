@@ -1,0 +1,4 @@
+minidynapi
+==========
+
+Minimal DynamoDB API
