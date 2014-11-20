@@ -1,3 +1,4 @@
+"use strict";
 module.exports = function( app, config ) {
 
 	var dbagent = require( config.dbagent );

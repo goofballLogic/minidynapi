@@ -3,13 +3,13 @@ var should = require( "chai" ).should();
 
 describe( "Given the app is configured", function() {
 
-	sx.initServer( sx.testConfig1, sx.testApp1 );
+	sx.initServer( sx.testConfig1, sx.builder.testApp1Def(), sx.builder.testApp1Roles() );
 
 	describe( "And I am a user without access to get the API", function() {
 
 		beforeEach( function() {
 
-			sx.fakeDB.fakeEntitlements( this.config.ns, {
+			sx.fakeDB.fakeUserEntitlements( this.config, {
 
 				"user1" : { "APIGET" : false }
 
@@ -28,12 +28,12 @@ describe( "Given the app is configured", function() {
 
 			sx.request.shouldReturn200();
 
-			it( "Then it should return none of the set links", function() {
+			it( "Doesn't return any of the set links", function() {
 
 				var res = this.res;
 				this.testApp.sets.forEach( function( set ) {
 
-					sx.linksForSet( res, set ).should.be.empty();
+					sx.linksForRel( res, set ).should.be.empty();
 
 				} );
 
@@ -45,22 +45,11 @@ describe( "Given the app is configured", function() {
 
 	describe( "And I am user2 who has read-only access to colours, but no access to friends", function() {
 
-
 		beforeEach( function() {
 
-			sx.fakeDB.fakeEntitlements( this.config.ns, {
+			sx.fakeDB.fakeUserEntitlements( this.config, {
 
 				"user2" : { "roles" : [ "colour-reviewer" ] },
-				"colour-reviewer" : {
-
-					"APIGET" : true,
-					"sets" : [ {
-						name: /^colours$/,
-						CRUD: "r"
-
-					} ]
-
-				}
 
 			} );
 			( this.headers = this.headers || {} ).Authorization = sx.builder.user2Authorization();
@@ -77,12 +66,12 @@ describe( "Given the app is configured", function() {
 
 			sx.request.shouldReturn200();
 
-			it( "Then it should only return the colours set link", function() {
+			it( "Only returns the colours set link", function() {
 
 				var res = this.res;
 				this.testApp.sets.forEach( function( set ) {
 
-					var actual = sx.linksForSet( res, set );
+					var actual = sx.linksForRel( res, set );
 					if( set == "colours" ) actual.length
 						.should.equal( 1, "Expected link to colours set" );
 					else actual.length

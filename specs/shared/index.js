@@ -5,12 +5,11 @@ module.exports = {
 
 	builder : require( "./builder" ),
 	testConfig1 : require( "./test-config-1" ),
-	testApp1: require( "./test-app-1" ),
 	agent: require( "./agent" ),
 	fakeDB: fakeDB,
 	once: once,
 	request: require( "./request" ),
-	initServer : function( config, app, entitlements ) {
+	initServer : function( config, appDefinition, roleEntitlements ) {
 
 		beforeEach( function( done ) {
 
@@ -22,9 +21,10 @@ module.exports = {
 			// the root URI is the base URI + the root app path
 			this.root = config.baseUri + config.path;
 			// store the app being used for this test
-			this.testApp = app;
+			this.testApp = appDefinition;
 			// initialize the fake dynamodb agent
-			fakeDB.init( config.ns, app );
+			fakeDB.init( config, appDefinition );
+			fakeDB.fakeRoleEntitlements( config, roleEntitlements );
 			try {
 
 				// create the API
@@ -52,15 +52,7 @@ module.exports = {
 		} );
 
 	},
-	linksForSet: function( res, set ) {
-
-		return ( res.body.links || [] ).filter( function( link ) {
-
-			return link.rel == set;
-
-		} );
-
-	}
+	linksForRel: require( "./request" ).linksForRel
 
 };
 

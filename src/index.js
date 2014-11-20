@@ -40,6 +40,7 @@ function configure( app, config, callback ) {
 			"authenticate",
 			"fetch-entitlements",
 			"app",
+			"sets"
 
 		]
 			.map( function( builder ) { return require( "./handlers/" + builder ); } )
