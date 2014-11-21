@@ -15,6 +15,8 @@ module.exports = {
 
 			done = once( done );
 
+			// init headers
+			this.headers = this.headers || {};
 			// ensure we have a namespace "ns"
 			config.ns = config.ns || config.name;
 			this.config = config;
@@ -52,7 +54,8 @@ module.exports = {
 		} );
 
 	},
-	linksForRel: require( "./request" ).linksForRel
+	linksForRel: require( "./request" ).linksForRel,
+	linksForURI: require( "./request" ).linksForURI
 
 };
 

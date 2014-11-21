@@ -14,7 +14,7 @@ describe( "Given the app is configured", function() {
 				"user1" : { "APIGET" : false }
 
 			} );
-			( this.headers = this.headers || {} ).Authorization = sx.builder.user1Authorization();
+			this.headers.Authorization = sx.builder.user1Authorization();
 
 		} );
 
@@ -52,7 +52,7 @@ describe( "Given the app is configured", function() {
 				"user2" : { "roles" : [ "colour-reviewer" ] },
 
 			} );
-			( this.headers = this.headers || {} ).Authorization = sx.builder.user2Authorization();
+			this.headers.Authorization = sx.builder.user2Authorization();
 
 		} );
 

@@ -39,8 +39,10 @@ function configure( app, config, callback ) {
 
 			"authenticate",
 			"fetch-entitlements",
+			"parse-body",
 			"app",
-			"sets"
+			"sets",
+			"items"
 
 		]
 			.map( function( builder ) { return require( "./handlers/" + builder ); } )

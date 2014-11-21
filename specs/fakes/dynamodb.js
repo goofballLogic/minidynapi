@@ -27,7 +27,57 @@ module.exports = {
 	fetchSetUserIndex: function( config, set, uid, callback ) {
 
 		var userIndex = this.ensureUserIndex( config, set, uid );
+		userIndex = JSON.parse( JSON.stringify( userIndex ) );
+		delete userIndex.seed;
 		callback( null, userIndex );
+
+	},
+	fetchUserItem: function( config, set, uid, iid, callback ) {
+
+		var userIndex = this.ensureUserIndex( config, set, uid );
+		var items = this.ensureSetTable( config, set );
+		if( !( iid in userIndex ) ) return callback();
+		var latest = userIndex[ iid ];
+		var itemName = itemVersionName( uid, iid, latest );
+		var value = items[ itemName ].value;
+		callback( null, value, true );
+
+	},
+	setUserItem: function( config, set, uid, iid, value, callback ) {
+
+		var userIndex = this.ensureUserIndex( config, set, uid );
+		var items = this.ensureSetTable( config, set );
+		if( !iid ) {
+
+			// generate an id if needed
+			iid = ( userIndex.seed = ( userIndex.seed || 100 ) + 1 )
+
+		};
+		// save the item
+		var itemVersionId = itemVersion( uid, iid );
+		items[ itemVersionId ] = { "value" : value };
+		// update the user index
+		userIndex[ iid ] = extractTimestamp( itemVersionId );
+		// return the id
+		callback( null, iid );
+
+	},
+	removeUserItem: function( config, set, uid, iid, callback ) {
+
+		var userIndex = this.ensureUserIndex( config, set, uid );
+		var items = this.ensureSetTable( config, set );
+		// find and remove all version of the item
+		var itemIndex = this.ensureItemIndex( config, set, uid, iid );
+		itemIndex.forEach( function( itemVersionId ) {
+
+			delete items[ itemVersionId ];
+
+		} );
+		// remove the item index
+		this.removeItemIndex( config, set, uid, iid );
+		// remove the item index entry
+		this.removeUserIndex( config, set, uid );
+		callback( null );
 
 	},
 
@@ -76,6 +126,13 @@ module.exports = {
 		}
 
 	},
+	resetItems: function( config, set ) {
+
+		var items = this.ensureSetTable( config, set );
+		for( var key in items ) delete items[ key ];
+
+	},
+
 	// helper methods
 	ensureAppTable: function( config ) {
 
@@ -89,6 +146,13 @@ module.exports = {
 		var indexName = itemIndexName( uid, iid );
 		setTable[ indexName ] = setTable[ indexName ] || [];
 		return setTable[ indexName ];
+
+	},
+	removeItemIndex: function( config, set, uid, iid ) {
+
+		var setTable = this.ensureSetTable( config, set );
+		var indexName = itemIndexName( uid, iid );
+		delete setTable[ indexName ];
 
 	},
 	ensureSetTable: function( config, set ) {
@@ -105,6 +169,13 @@ module.exports = {
 		setTable[ indexName ] = setTable[ indexName ] || {};
 		return setTable[ indexName ];
 
+	},
+	removeUserIndex: function( config, set, uid ) {
+
+		var setTable = this.ensureSetTable( config, set );
+		var indexName = userIndexName( uid );
+		delete setTable[ indexName ];
+
 	}
 
 };
@@ -119,7 +190,6 @@ function setTable( config, set ) {
 	return config.ns + "." + set;
 
 }
-
 function userEntitlement( user ) {
 
 	return "user-entitlements." + user;
@@ -137,7 +207,12 @@ function userIndexName( uid ) {
 }
 function itemVersion( uid, iid ) {
 
-	return uid + "." + iid + "." + createTimestamp();
+	return itemVersionName( uid, iid, createTimestamp() );
+
+}
+function itemVersionName( uid, iid, latest ) {
+
+	return uid + "." + iid + "." + latest;
 
 }
 function itemIndexName( uid, iid ) {

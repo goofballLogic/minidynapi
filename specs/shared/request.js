@@ -23,9 +23,20 @@ module.exports = {
 	},
 	linksForRel: function( res, set ) {
 
+		if( !res.body ) return null;
 		return ( res.body.links || [] ).filter( function( link ) {
 
 			return link.rel == set;
+
+		} );
+
+	},
+	linksForURI: function( res, uri ) {
+
+		if( !res.body ) return null;
+		return ( res.body.links|| [] ).filter( function( link ) {
+
+			return link.href == uri;
 
 		} );
 

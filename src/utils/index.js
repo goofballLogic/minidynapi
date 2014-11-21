@@ -1,5 +1,6 @@
 module.exports = {
 
-	links : require( "./link-builder" )
+	links : require( "./link-builder" ),
+	permissions: require( "./permissions" )
 
 };

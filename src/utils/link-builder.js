@@ -1,36 +1,17 @@
+var permissions = require( "./permissions" );
+
 module.exports = {
 
-	buildForSet: function( config, permissions, set ) {
+	buildForSet: function( config, permissionsRaw, set ) {
 
-		function has( x ) { return !!~CRUD.indexOf( x ); }
-		var CRUD = "";
-		( permissions.sets || [] )
-			.filter( function( setPermission ) { return !!setPermission.CRUD; } )
-			.filter( function( setPermission ) {
-
-				// convert to regexp if necessary
-				if( !( setPermission.name instanceof RegExp ) )
-					setPermission.name = new RegExp( setPermission.name );
-				return setPermission.name.test( set );
-
-			} )
-			.forEach( function( setPermission ) {
-
-				for( var i = 0; i < setPermission.CRUD.length; i++ ) {
-
-					var perm = setPermission.CRUD[ i ].toLowerCase();
-					if( !has( perm ) ) CRUD = CRUD + perm.toLowerCase();
-
-				}
-
-			} );
-
-		var canRead = has( "r" );
-		var canCreate = has( "c" );
+		var CRUD = permissions.compileForSet( permissionsRaw, set );
+		var canRead = !!~CRUD.indexOf( "r" );
+		var canCreate = !!~CRUD.indexOf( "c" );
 		if( !( canRead || canCreate ) ) return null;
 		var verbs = [];
 		if( canRead ) verbs.push( "get" );
 		if( canCreate ) verbs.push( "post" );
+		if( !verbs.length ) return null;
 		return {
 
 			"rel" : set,
@@ -40,13 +21,22 @@ module.exports = {
 		};
 
 	},
-	buildForItem: function( config, permissions, set, item ) {
+	buildForUserItem: function( config, permissionsRaw, set, user, item ) {
 
+		var CRUD = permissions.compileForSet( permissionsRaw, set );
+		var canRead = !!~CRUD.indexOf( "r" );
+		var canDelete = !!~CRUD.indexOf( "d" );
+		var canUpdate = !!~CRUD.indexOf( "u" );
+		var verbs = [];
+		if( canRead ) verbs.push( "get" );
+		if( canDelete ) verbs.push( "delete" );
+		if( canUpdate ) verbs.push( "put" );
+		if( !verbs.length ) return null;
 		return {
 
 			"rel" : item,
-			"href" : makeItemURI( config, set, item ),
-			"verbs" : []
+			"href" : makeUserItemURI( config, set, user, item ),
+			"verbs" : verbs
 
 		};
 
@@ -59,8 +49,8 @@ function makeSetURI( config, setName ) {
 	return config.baseUri + config.path + "/" + setName;
 
 }
-function makeItemURI( config, setName, itemName ) {
+function makeUserItemURI( config, setName, userName, itemName ) {
 
-	return makeSetURI( config, setName ) + "/" + itemName;
+	return makeSetURI( config, setName ) + "/" + userName + "/" + itemName;
 
 }

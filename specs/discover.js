@@ -14,7 +14,7 @@ describe( "Given the app is configured", function() {
 				"user1" : { "roles" : [ "su" ] },
 
 			} );
-			( this.headers = this.headers || {} ).Authorization = sx.builder.user1Authorization();
+			this.headers.Authorization = sx.builder.user1Authorization();
 
 		} );
 

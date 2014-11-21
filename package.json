@@ -1,6 +1,6 @@
 {
   "name": "minidynapi",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Minimal DynamoDB API",
   "main": "src/main.js",
   "scripts": {
@@ -23,6 +23,7 @@
     "superstack": "0.0.4"
   },
   "dependencies": {
-    "express": "~4.10.2"
+    "express": "~4.10.2",
+    "body-parser": "~1.9.2"
   }
 }
