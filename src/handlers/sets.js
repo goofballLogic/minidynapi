@@ -5,7 +5,7 @@ module.exports = function( app, config ) {
 
 	var dbagent = require( config.dbagent );
 
-	app.get( config.path + "/:set/", function( req, res ) {
+	app.get( config.path + "/:set/", function( req, res, next ) {
 
 		var set = req.params.set;
 		var uid = req.user;
@@ -19,7 +19,7 @@ module.exports = function( app, config ) {
 		}
 		dbagent.fetchSetUserIndex( config, req.params.set, uid, function( err, index ) {
 
-			if( err ) throw err;
+			if( err ) return next( err );
 			for( var item in index ) {
 
 				var itemLink = utils.links.buildForUserItem( config, req.permissions, set, uid, item );
@@ -33,13 +33,13 @@ module.exports = function( app, config ) {
 
 	} );
 
-	app.post( config.path + "/:set/", function( req, res ) {
+	app.post( config.path + "/:set/", function( req, res, next ) {
 
 		var set = req.params.set;
 		var uid = req.user;
 		dbagent.setUserItem( config, set, uid, null, req.body, function( err, iid ) {
 
-			if( err ) throw err;
+			if( err ) return next( err );
 			var itemLink = utils.links.buildForUserItem( config, req.permissions, req.params.set, req.user, iid );
 			res.set( "Location", itemLink.href );
 			res.sendStatus( 201 );

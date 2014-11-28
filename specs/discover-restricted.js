@@ -1,20 +1,21 @@
 var sx = require( "./shared" );
 var should = require( "chai" ).should();
-
+return;
 describe( "Given the app is configured", function() {
 
-	sx.initServer( sx.testConfig1, sx.builder.testApp1Def(), sx.builder.testApp1Roles() );
+	this.timeout( 10000 );
+	sx.initServer( sx.testConfig, sx.builder.testApp1Def(), sx.builder.testApp1Roles() );
 
 	describe( "And I am a user without access to get the API", function() {
 
-		beforeEach( function() {
+		beforeEach( function( done ) {
 
+			this.headers.Authorization = sx.builder.user1Authorization();
 			sx.fakeDB.fakeUserEntitlements( this.config, {
 
 				"user1" : { "APIGET" : false }
 
-			} );
-			this.headers.Authorization = sx.builder.user1Authorization();
+			}, done );
 
 		} );
 
@@ -45,14 +46,14 @@ describe( "Given the app is configured", function() {
 
 	describe( "And I am user2 who has read-only access to colours, but no access to friends", function() {
 
-		beforeEach( function() {
+		beforeEach( function( done ) {
 
+			this.headers.Authorization = sx.builder.user2Authorization();
 			sx.fakeDB.fakeUserEntitlements( this.config, {
 
 				"user2" : { "roles" : [ "colour-reviewer" ] },
 
-			} );
-			this.headers.Authorization = sx.builder.user2Authorization();
+			}, done );
 
 		} );
 

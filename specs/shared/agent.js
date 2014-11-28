@@ -1,3 +1,4 @@
+"use strict";
 var sa = require( "superagent" );
 
 module.exports = {

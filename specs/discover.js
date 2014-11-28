@@ -1,20 +1,21 @@
 var sx = require( "./shared" );
 var should = require( "chai" ).should();
-
+return;
 describe( "Given the app is configured", function() {
 
-	sx.initServer( sx.testConfig1, sx.builder.testApp1Def(), sx.builder.testApp1Roles() );
+	this.timeout( 10000 );
+	sx.initServer( sx.testConfig, sx.builder.testApp1Def(), sx.builder.testApp1Roles() );
 
 	describe( "And I am user1 who is a super user", function() {
 
-		beforeEach( function() {
+		beforeEach( function( done ) {
 
+			this.headers.Authorization = sx.builder.user1Authorization();
 			sx.fakeDB.fakeUserEntitlements( this.config, {
 
 				"user1" : { "roles" : [ "su" ] },
 
-			} );
-			this.headers.Authorization = sx.builder.user1Authorization();
+			}, done );
 
 		} );
 

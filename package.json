@@ -20,10 +20,14 @@
     "chai": "~1.10.0",
     "gulp-watch": "~1.2.0",
     "superagent": "~0.21.0",
-    "superstack": "0.0.4"
+    "superstack": "0.0.4",
+    "longjohn": "~0.2.4",
+    "gulp-shell": "~0.2.10"
   },
   "dependencies": {
     "express": "~4.10.2",
-    "body-parser": "~1.9.2"
+    "body-parser": "~1.9.2",
+    "aws-sdk": "~2.0.28",
+    "async": "~0.9.0"
   }
 }

@@ -1,33 +1,48 @@
 "use strict";
 var sx = require( "./shared" );
 var should = require( "chai" ).should();
-
+var async = require( "async" );
+return;
 describe( "Given the app is configured", function() {
 
-	sx.initServer( sx.testConfig1, sx.builder.testApp1Def(), sx.builder.testApp1Roles() );
+	this.timeout( 10000 );
+	sx.initServer( sx.testConfig, sx.builder.testApp1Def(), sx.builder.testApp1Roles() );
 
 	describe( "And I am user2 who is a colours-reviewer, with some data (item1, item2) stored in colours", function() {
 
-		beforeEach( function() {
+		beforeEach( function( done ) {
 
-			sx.fakeDB.fakeUserEntitlements( this.config, {
-
-				"user2" : { "roles" : [ "colour-reviewer" ] }
-
-			} );
-			sx.fakeDB.resetItems( this.config, "colours" );
-			sx.fakeDB.forceItems( this.config, "colours", "user2", {
-
-				"item1" : { "value" : "blue" },
-				"item2" : { "value" : "red" }
-
-			} );
-			sx.fakeDB.forceItems( this.config, "colours", "user1", {
-
-				"item1" : { "value" : "purple" }
-
-			} );
 			this.headers.Authorization = sx.builder.user2Authorization();
+			async.series( [ function( done ) {
+
+				sx.fakeDB.fakeUserEntitlements( this.config, {
+
+					"user2" : { "roles" : [ "colour-reviewer" ] }
+
+				}, done );
+
+			}.bind( this ), function( done ) {
+
+				sx.fakeDB.resetItems( this.config, "colours", done );
+
+			}.bind( this ), function( done ) {
+
+				sx.fakeDB.forceItems( this.config, "colours", "user2", {
+
+					"item1" : { "value" : "blue" },
+					"item2" : { "value" : "red" }
+
+				}, done );
+
+			}.bind( this ), function( done ) {
+
+				sx.fakeDB.forceItems( this.config, "colours", "user1", {
+
+					"item1" : { "value" : "purple" }
+
+				}, done );
+
+			}.bind( this ) ], done );
 
 		} );
 
@@ -35,18 +50,21 @@ describe( "Given the app is configured", function() {
 
 			beforeEach( function( done ) {
 
-				sx.agent.get( this, this.root, function( err ) {
+				async.series( [ function( done ) {
 
-					if( err ) return done( err );
+					sx.agent.get( this, this.root, done );
+
+				}.bind( this ), function( done ) {
+
 					var coloursLink = sx.linksForRel( this.res, "colours" )[ 0 ];
-					sx.agent.get( this, coloursLink.href, function( err ) {
+					sx.agent.get( this, coloursLink.href, done );
 
-						this.item1Link = sx.linksForRel( this.res, "item1" )[ 0 ];
-						done( err );
+				}.bind( this ), function( done ) {
 
-					}.bind( this ) );
+					this.item1Link = sx.linksForRel( this.res, "item1" )[ 0 ];
+					done();
 
-				}.bind( this ) );
+				}.bind( this ) ], done );
 
 			} );
 

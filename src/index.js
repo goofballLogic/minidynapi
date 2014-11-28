@@ -31,7 +31,6 @@ function configure( app, config, callback ) {
 	dbagent.fetchAppDefinition( config, function( err, definition ) {
 
 		if( err ) return callback( err );
-
 		// store definition
 		app.set( "def", definition );
 		// define handlers
@@ -42,7 +41,8 @@ function configure( app, config, callback ) {
 			"parse-body",
 			"app",
 			"sets",
-			"items"
+			"items",
+			"errors"
 
 		]
 			.map( function( builder ) { return require( "./handlers/" + builder ); } )

@@ -5,7 +5,7 @@ module.exports = function( app, config ) {
 
 	var dbagent = require( config.dbagent );
 
-	app.get( config.path + "/:set/:uid/:iid", function( req, res ) {
+	app.get( config.path + "/:set/:uid/:iid", function( req, res, next ) {
 
 		var set = req.params.set;
 		var uid = req.params.uid;
@@ -16,7 +16,7 @@ module.exports = function( app, config ) {
 		if( !~verbs.indexOf( "get" ) ) return res.sendStatus( 403 );
 		dbagent.fetchUserItem( config, set, uid, iid, function( err, payload, exists ) {
 
-			if( err ) throw err;
+			if( err ) return next( err );
 			if( !exists ) {
 
 				return res.sendStatus( 404 );
@@ -29,7 +29,7 @@ module.exports = function( app, config ) {
 
 	} );
 
-	app.put( config.path + "/:set/:uid/:iid", function( req, res ) {
+	app.put( config.path + "/:set/:uid/:iid", function( req, res, next ) {
 
 		var set = req.params.set;
 		var uid = req.params.uid;
@@ -40,14 +40,14 @@ module.exports = function( app, config ) {
 		if( !~verbs.indexOf( "put" ) ) return res.sendStatus( 403 );
 		dbagent.setUserItem( config, set, uid, iid, req.body, function( err, iid ) {
 
-			if( err ) throw err;
+			if( err ) return next( err );
 			res.sendStatus( 204 );
 
 		} );
 
 	} );
 
-	app.delete( config.path + "/:set/:uid/:iid", function( req, res ) {
+	app.delete( config.path + "/:set/:uid/:iid", function( req, res, next ) {
 
 		var set = req.params.set;
 		var uid = req.params.uid;
@@ -58,7 +58,7 @@ module.exports = function( app, config ) {
 		if( !~verbs.indexOf( "put" ) ) return res.sendStatus( 403 );
 		dbagent.removeUserItem( config, set, uid, iid, function( err ) {
 
-			if( err ) throw err;
+			if( err ) return next( err );
 			res.sendStatus( 200 );
 
 		} );

@@ -1,4 +1,5 @@
 "use strict";
+var fs = require( "fs" );
 var state = {};
 
 module.exports = {
@@ -6,12 +7,14 @@ module.exports = {
 	// behaviours
 	fetchAppDefinition: function( config, callback ) {
 
+		loadState();
 		var manifest = this.ensureAppTable( config ).manifest || {};
 		callback( null, manifest );
 
 	},
 	fetchUserEntitlements: function( config, uid, callback ) {
 
+		loadState();
 		var appTable = this.ensureAppTable( config );
 		var entitlements = appTable[ userEntitlement( uid ) ] || {};
 		callback( null, entitlements );
@@ -19,6 +22,7 @@ module.exports = {
 	},
 	fetchRoleEntitlements: function( config, role, callback ) {
 
+		loadState();
 		var appTable = this.ensureAppTable( config );
 		var entitlements = appTable[ roleEntitlement( role ) ] || {};
 		callback( null, entitlements );
@@ -26,6 +30,7 @@ module.exports = {
 	},
 	fetchSetUserIndex: function( config, set, uid, callback ) {
 
+		loadState();
 		var userIndex = this.ensureUserIndex( config, set, uid );
 		userIndex = JSON.parse( JSON.stringify( userIndex ) );
 		delete userIndex.seed;
@@ -34,6 +39,7 @@ module.exports = {
 	},
 	fetchUserItem: function( config, set, uid, iid, callback ) {
 
+		loadState();
 		var userIndex = this.ensureUserIndex( config, set, uid );
 		var items = this.ensureSetTable( config, set );
 		if( !( iid in userIndex ) ) return callback();
@@ -45,6 +51,7 @@ module.exports = {
 	},
 	setUserItem: function( config, set, uid, iid, value, callback ) {
 
+		loadState();
 		var userIndex = this.ensureUserIndex( config, set, uid );
 		var items = this.ensureSetTable( config, set );
 		if( !iid ) {
@@ -59,11 +66,13 @@ module.exports = {
 		// update the user index
 		userIndex[ iid ] = extractTimestamp( itemVersionId );
 		// return the id
+		saveState();
 		callback( null, iid );
 
 	},
 	removeUserItem: function( config, set, uid, iid, callback ) {
 
+		loadState();
 		var userIndex = this.ensureUserIndex( config, set, uid );
 		var items = this.ensureSetTable( config, set );
 		// find and remove all version of the item
@@ -77,39 +86,51 @@ module.exports = {
 		this.removeItemIndex( config, set, uid, iid );
 		// remove the item index entry
 		this.removeUserIndex( config, set, uid );
+		saveState();
 		callback( null );
 
 	},
 
 	// test seams
-	init: function( config, manifest ) {
+	init: function( config, manifest, callback ) {
 
+		loadState();
 		var appTable = this.ensureAppTable( config );
 		appTable.manifest = manifest;
+		saveState();
+		callback( null );
+
 
 	},
-	fakeUserEntitlements: function( config, entitlements ) {
+	fakeUserEntitlements: function( config, entitlements, callback ) {
 
+		loadState();
 		var appTable = this.ensureAppTable( config );
 		for( var uid in entitlements || {} ) {
 
 			appTable[ userEntitlement( uid ) ] = entitlements[ uid ];
 
 		}
+		saveState();
+		callback( null );
 
 	},
-	fakeRoleEntitlements: function( config, entitlements ) {
+	fakeRoleEntitlements: function( config, entitlements, callback ) {
 
+		loadState();
 		var appTable = this.ensureAppTable( config );
 		for( var role in entitlements || {} ) {
 
 			appTable[ roleEntitlement( role ) ] = entitlements[ role ];
 
 		}
+		saveState();
+		callback( null );
 
 	},
-	forceItems: function( config, set, uid, itemsToAdd ) {
+	forceItems: function( config, set, uid, itemsToAdd, callback ) {
 
+		loadState();
 		var userIndex = this.ensureUserIndex( config, set, uid );
 		var items = this.ensureSetTable( config, set );
 		for( var iid in itemsToAdd ) {
@@ -124,12 +145,17 @@ module.exports = {
 			userIndex[ iid ] = extractTimestamp( itemVersionId );
 
 		}
+		saveState();
+		callback( null );
 
 	},
-	resetItems: function( config, set ) {
+	resetItems: function( config, set, callback ) {
 
+		loadState();
 		var items = this.ensureSetTable( config, set );
 		for( var key in items ) delete items[ key ];
+		saveState();
+		callback();
 
 	},
 
@@ -180,6 +206,26 @@ module.exports = {
 
 };
 
+function loadState() {
+
+	try {
+
+		var serialized = fs.readFileSync( __dirname + "/dynamodb_state.json" );
+		state = JSON.parse( serialized );
+
+	} catch( e ) {
+
+		state = {};
+		saveState();
+
+	}
+
+}
+function saveState() {
+
+	fs.writeFileSync( __dirname + "/dynamodb_state.json", JSON.stringify( state ) );
+
+}
 function appTable( config ) {
 
 	return config.ns + ".definition";

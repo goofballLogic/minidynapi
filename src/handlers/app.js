@@ -10,6 +10,7 @@ module.exports = function( app, config ) {
 
 			var def = app.get( "def" ) || {};
 			var sets = def.sets || [];
+
 			body.links = sets
 				.map( utils.links.buildForSet.bind( this, config, req.permissions) )
 				.filter( function( link ) { return !!link; } );

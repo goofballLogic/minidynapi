@@ -1,28 +1,53 @@
 "use strict";
 var sx = require( "./shared" );
 var should = require( "chai" ).should();
+var async = require( "async" );
+
+sx.check = function( context, callback, next ) {
+
+	return function( err ) {
+
+		if( err ) return callback( err );
+		next.call( context );
+
+	};
+
+};
+
 
 describe( "Given the app is configured", function() {
 
-	sx.initServer( sx.testConfig1, sx.builder.testApp1Def(), sx.builder.testApp1Roles() );
+	if( sx.testConfig.region ) this.timeout( 20000 );
+	sx.initServer( sx.testConfig, sx.builder.testApp1Def(), sx.builder.testApp1Roles() );
+
 
 	describe( "And I am user1 who is a super user, with some data (item1, item2) stored in colours", function() {
 
-		beforeEach( function() {
+		beforeEach( function( done ) {
 
-			sx.fakeDB.fakeUserEntitlements( this.config, {
-
-				"user1" : { "roles" : [ "su" ] }
-
-			} );
-			sx.fakeDB.resetItems( this.config, "colours" );
-			sx.fakeDB.forceItems( this.config, "colours", "user1", {
-
-				"item1" : { "value" : "blue" },
-				"item2" : { "value" : "red" }
-
-			} );
 			this.headers.Authorization = sx.builder.user1Authorization();
+			async.series( [ function( done ) {
+
+				sx.fakeDB.fakeUserEntitlements( this.config, {
+
+					"user1" : { "roles" : [ "su" ] }
+
+				}, done );
+
+			}.bind( this ), function( done ) {
+
+				sx.fakeDB.resetItems( this.config, "colours", done );
+
+			}.bind( this ), function( done ) {
+
+				sx.fakeDB.forceItems( this.config, "colours", "user1", {
+
+					"item1" : { "value" : "blue" },
+					"item2" : { "value" : "red" }
+
+				}, done );
+
+			}.bind( this ) ], done );
 
 		} );
 
@@ -30,19 +55,23 @@ describe( "Given the app is configured", function() {
 
 			beforeEach( function( done ) {
 
+
 				this.postedColour = "green";
-				sx.agent.get( this, this.root, function( err ) {
+				async.series( [ function( done ) {
 
-					if( err ) return done( err );
+					sx.agent.get( this, this.root, done );
+
+				}.bind( this ), function( done ) {
+
 					this.coloursLink = sx.linksForRel( this.res, "colours" )[ 0 ];
-					sx.agent.post( this, this.coloursLink.href, this.postedColour, function( err ) {
+					sx.agent.post( this, this.coloursLink.href, this.postedColour, done );
 
-						this.newColourLocation = this.res.headers[ "location" ];
-						done( err );
+				}.bind( this ), function( done ) {
 
-					}.bind( this ) );
+					this.newColourLocation = this.res.headers[ "location" ];
+					done();
 
-				}.bind( this ) );
+				}.bind( this ) ], done );
 
 			} );
 
@@ -98,22 +127,26 @@ describe( "Given the app is configured", function() {
 
 		} );
 
+return;
 		describe( "When I follow the colours link from the API endpoint", function() {
 
 			beforeEach( function( done ) {
 
-				sx.agent.get( this, this.root, function( err ) {
+				async.series( [ function( done ) {
 
-					if( err ) return done( err );
+					sx.agent.get( this, this.root, done );
+
+				}.bind( this ), function( done ) {
+
 					var coloursLink = sx.linksForRel( this.res, "colours" )[ 0 ];
-					sx.agent.get( this, coloursLink.href, function( err ) {
+					sx.agent.get( this, coloursLink.href, done );
 
-						this.item1Link = sx.linksForRel( this.res, "item1" )[ 0 ];
-						done( err );
+				}.bind( this ), function( done ) {
 
-					}.bind( this ) );
+					this.item1Link = sx.linksForRel( this.res, "item1" )[ 0 ];
+					done();
 
-				}.bind( this ) );
+				}.bind( this ) ], done );
 
 			} )
 
