@@ -203,17 +203,19 @@ function deleteItems( config, rawTableName, items, callback ) {
 	} );
 
 }
-function updateItem( config, table, key, attrNames, attrValues, updateExpression, callback) {
+function updateItem( config, rawTableName, key, attrNames, attrValues, updateExpression, callback) {
 
 	var dynamodb = buildClient( config );
 	var params = {
 		Key: asAttrs( key ),
-		TableName: config.ns + "_" + table,
-		ExpressionAttributeValues: asAttrs( attrValues ),
+		TableName: config.ns + "_" + rawTableName,
 		ExpressionAttributeNames: attrNames,
 		UpdateExpression: updateExpression,
 		ReturnValues: "ALL_NEW"
 	};
+	if( attrValues )
+		params.ExpressionAttributeValues = asAttrs( attrValues )
+
 	dynamodb.updateItem( params, function( err, data ) {
 
 		if( !err ) return callback( null, data.Attributes.value );
@@ -223,53 +225,143 @@ function updateItem( config, table, key, attrNames, attrValues, updateExpression
 	} );
 
 }
+function scan( config, rawTableName, attrNames, attrValues, filterExpression, requestedAttrNames, callback ) {
+
+	var dynamodb = buildClient( config );
+	var params = {
+
+		ProjectionExpression: requestedAttrNames.join( ", " ),
+		ExpressionAttributeNames: attrNames,
+		ExpressionAttributeValues: asAttrs( attrValues ),
+		FilterExpression: filterExpression,
+		TableName: config.ns + "_" + rawTableName
+
+	};
+	dynamodb.scan( params, function( err, data ) {
+
+		if( !err ) return callback( null, data.Items );
+		console.error && console.error( err, params );
+		callback( new Error( err ) );
+
+	} );
+
+}
+
+
+
+
 function updateUserIndex( config, set, uid, iid, vid, callback ) {
 
 	var key = { uid: uid, vid: uid + "_index" };
-	var attrNames1 = { "#item" : "item" };
+	var attrNames1 = { "#content" : "content" };
 	var attrValues1 = { ":empty" : {} };
-	var expression1 = "SET #item = if_not_exists(#item, :empty)";
+	var expression1 = "SET #content = if_not_exists(#content, :empty)";
 	updateItem( config, set, key, attrNames1, attrValues1, expression1, function( err ) {
 
 		if( err ) return callback( err );
-		var attrNames2 = { "#item" : "item", "#iid" : iid };
+		var attrNames2 = { "#content" : "content", "#iid" : iid };
 		var attrValues2 = { ":vid" : vid };
-		var expression2 = "SET #item.#iid = :vid";
+		var expression2 = "SET #content.#iid = :vid";
 		updateItem( config, set, key, attrNames2, attrValues2, expression2, callback );
 
 	} );
 
 }
+function removeItemFromUserIndex( config, set, uid, iid, callback ) {
+
+	var key = { uid: uid, vid: uid + "_index" };
+	var attrNames = { "#content" : "content", "#iid" : iid };
+	var attrValues = null;
+	var expression = "REMOVE #content.#iid";
+	updateItem( config, set, key, attrNames, attrValues, expression, callback );
+
+}
+
 function updateItemIndex( config, set, uid, iid, when, vid, callback ) {
 
 	var key = { uid: uid, vid: iid + "_index" };
-	var attrNames1 = { "#item" : "item" };
+	var attrNames1 = { "#content" : "content" };
 	var attrValues1 = { ":empty" : {} };
-	var expression1 = "SET #item = if_not_exists(#item, :empty)";
+	var expression1 = "SET #content = if_not_exists(#content, :empty)";
 	updateItem( config, set, key, attrNames1, attrValues1, expression1, function( err ) {
 
 		if( err ) return callback( err );
-		var attrNames2 = { "#item" : "item", "#when" : when };
+		var attrNames2 = { "#content" : "content", "#when" : when };
 		var attrValues2 = { ":vid" : vid };
-		var expression2 = "SET #item.#when = :vid";
+		var expression2 = "SET #content.#when = :vid";
 		updateItem( config, set, key, attrNames2, attrValues2, expression2, callback );
 
 	} );
 
 }
+var DELETION_PENDING = "DELETION_PENDING";
+function markUserIndexItemForDeletion( config, set, uid, iid, callback) {
+
+	var key = { uid: uid, vid: uid + "_index" };
+	var attrNames = { "#content" : "content", "#iid" : iid };
+	var attrValues = { ":value" : DELETION_PENDING };
+	var expression = "SET #content.#iid = :value";
+	updateItem( config, set, key, attrNames, attrValues, expression, callback );
+
+}
+function removeAllItems( config, set, uid, iid, callback ) {
+
+	var attrNames = { "#vid" : "vid", "#uid" : "uid" };
+	var attrValues = { ":uid" : uid, ":vidPrefix" : iid + "_" };
+	var expression = "begins_with( #vid, :vidPrefix ) and #uid = :uid";
+	var requestedAttrNames = [ "vid" ];
+	scan( config, set, attrNames, attrValues, expression, requestedAttrNames, function( err, data ) {
+
+		if( err ) return callback( err );
+		if( data.length == 0 ) {
+
+			// no more items
+			return callback( null );
+
+		}
+		var vids = data.map( function( item ) {
+
+			return parseObjectValue( item.vid );
+
+		} );
+		// now we have a list of vids to remove
+		removeItems( config, set, uid, vids, function( err ) {
+
+			if( err ) return callback( err );
+			// loop around to see if there are any more to remove
+			removeAllItems( config, set, uid, iid, callback );
+
+		} );
+
+	} );
+
+}
+
+function removeItems( config, set, uid, vids, callback ) {
+
+
+	var items = vids.map( function( vid ) {
+
+		return { "uid" : uid, "vid" : vid };
+
+	} );
+	deleteItems( config, set, items, callback )
+
+}
+
 function getUserIndexItem( config, set, uid, iid, callback ) {
 
 	var key = { uid: uid, vid: uid + "_index" };
-	var attrNames = { "#item" : "item", "#iid" : iid };
-	var expression = "#item.#iid";
+	var attrNames = { "#content" : "content", "#iid" : iid };
+	var expression = "#content.#iid";
 	getItemAttr( config, set, key, attrNames, expression, callback );
 
 }
 function getUserIndex( config, set, uid, callback ) {
 
 	var key = { uid: uid, vid: uid + "_index" };
-	var attrNames = { "#item" : "item" };
-	var expression = "#item";
+	var attrNames = { "#content" : "content" };
+	var expression = "#content";
 	getItemAttr( config, set, key, attrNames, expression, callback );
 
 }
@@ -279,9 +371,10 @@ function getItemVersion( config, set, uid, vid, callback ) {
 	getItems( config, set, key, function( err, results ) {
 
 		if( err ) return callback( err );
+		if( !( results && results.length ) ) return callback();
 		try {
 
-			var rawItem = results[ 0 ].item;
+			var rawItem = results[ 0 ].content;
 			var parsed = parseObjectValue( rawItem );
 			callback( null, parsed, true );
 
@@ -294,7 +387,12 @@ function getItemVersion( config, set, uid, vid, callback ) {
 	} );
 
 }
+function setItemVersion( config, set, uid, iid, vid, value, callback ) {
 
+	var item = { vid: vid, uid: uid, iid: iid, content: value };
+	setItems( config, set, [ item ], callback );
+
+}
 function getNextItemId( config, set, callback ) {
 
 	var key = { setting : set + "_seed" };
@@ -357,26 +455,21 @@ module.exports = {
 	// public methods
 	setUserItem: function( config, set, uid, iid, value, callback ) {
 
+// TODO: ensure that the user index isn't marked for deletion
 		this.ensureItemId( config, set, iid, function( err, iid ) {
 
 			if( err ) return callback( err );
 			// we now have an id to set the user item against
 			var when = createTimestamp();
 			var vid = iid + "_" + when;
-			var item = {
-				"uid" : uid,
-				"iid" : iid,
-				"vid" : vid,
-				"item" : value
-			};
-
-			setItems( config, set, [ item ], function( err ) {
+			setItemVersion( config, set, uid, iid, vid, value, function( err ) {
 
 				if( err ) return callback( err );
 				// item version was created, so update the item index
 				updateItemIndex( config, set, uid, iid, when, vid, function( err ) {
 
 					if( err ) return callback( err );
+					// TODO: ensure that the user index isn't marked for deletion
 					// item index is updated, so update the user index
 					updateUserIndex( config, set, uid, iid, vid, function( err ) {
 
@@ -386,6 +479,24 @@ module.exports = {
 					} );
 
 				} );
+
+			} );
+
+		} );
+
+	},
+	removeUserItem: function( config, set, uid, iid, callback ) {
+
+		// mark the item for deletion in the user index
+		markUserIndexItemForDeletion( config, set, uid, iid, function( err ) {
+
+			if( err ) return callback( err );
+			// remove all item indexes and items
+			removeAllItems( config, set, uid, iid, function( err ) {
+
+				if( err ) return callback( err );
+				// clear the user index
+				removeItemFromUserIndex( config, set, uid, iid, callback );
 
 			} );
 
@@ -450,7 +561,7 @@ module.exports = {
 		getUserIndex( config, set, uid, function( err, results ) {
 
 			if( err ) return callback( err );
-			var parsed = parseObjectValue( results.item );
+			var parsed = parseObjectValue( results.content );
 			callback( null, parsed );
 
 		} );
@@ -462,16 +573,12 @@ module.exports = {
 		getUserIndexItem( config, set, uid, iid, function( err, results ) {
 
 			if( err ) return callback( err );
-			var item = parseObjectValue( results.item );
+			if( !( results && results.content ) ) return callback();
+			var item = parseObjectValue( results.content );
 			var vid = item[ iid ];
 			getItemVersion( config, set, uid, vid, callback );
 
 		} );
-
-	},
-	removeUserItem: function( config, set, uid, iid, callback ) {
-
-		throw new Error( "Not implemented" );
 
 	}
 

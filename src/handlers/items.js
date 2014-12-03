@@ -23,6 +23,7 @@ module.exports = function( app, config ) {
 
 			}
 			var body = { "value" : payload };
+// TODO: return links
 			res.send( body );
 
 		} );

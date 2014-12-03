@@ -1,6 +1,6 @@
 var sx = require( "./shared" );
 var should = require( "chai" ).should();
-return;
+
 describe( "Given the app is configured", function() {
 
 	this.timeout( 10000 );

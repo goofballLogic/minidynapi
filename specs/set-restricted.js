@@ -2,7 +2,7 @@
 var sx = require( "./shared" );
 var should = require( "chai" ).should();
 var async = require( "async" );
-return;
+
 describe( "Given the app is configured", function() {
 
 	this.timeout( 10000 );
@@ -29,8 +29,8 @@ describe( "Given the app is configured", function() {
 
 				sx.fakeDB.forceItems( this.config, "colours", "user2", {
 
-					"item1" : { "value" : "blue" },
-					"item2" : { "value" : "red" }
+					"item1" : "blue",
+					"item2" : "red"
 
 				}, done );
 
@@ -38,7 +38,7 @@ describe( "Given the app is configured", function() {
 
 				sx.fakeDB.forceItems( this.config, "colours", "user1", {
 
-					"item1" : { "value" : "purple" }
+					"item1" : "purple"
 
 				}, done );
 

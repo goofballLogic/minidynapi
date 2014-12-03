@@ -49,7 +49,7 @@ ddb.forceItems = function( config, set, uid, itemsToAdd, callback ) {
 	var items = [];
 	for( var iid in itemsToAdd ) {
 
-		items.push( { "iid" : iid, "value" : itemsToAdd[ iid ] } );
+		items.push( { "iid" : iid, "content" : itemsToAdd[ iid ] } );
 
 	}
 	forceEachItem.call( this, config, set, uid, items, callback );
@@ -59,7 +59,7 @@ function forceEachItem( config, set, uid, items, callback ) {
 
 	if( !items.length ) return callback();
 	var item = items.pop();
-	this.setUserItem( config, set, uid, item.iid, item.value, function( err ) {
+	this.setUserItem( config, set, uid, item.iid, item.content, function( err ) {
 
 		if( err ) return callback( err );
 		forceEachItem.call( this, config, set, uid, items, callback );

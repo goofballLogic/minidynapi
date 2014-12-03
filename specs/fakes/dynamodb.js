@@ -137,7 +137,7 @@ module.exports = {
 
 			// save the item
 			var itemVersionId = itemVersion( uid, iid );
-			items[ itemVersionId ] = itemsToAdd[ iid ];
+			items[ itemVersionId ] = { "value" : itemsToAdd[ iid ] };
 			// update the users item index
 			var itemIndex = this.ensureItemIndex( config, set, uid, iid );
 			itemIndex.push( itemVersionId );

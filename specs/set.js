@@ -42,12 +42,22 @@ describe( "Given the app is configured", function() {
 
 				sx.fakeDB.forceItems( this.config, "colours", "user1", {
 
-					"item1" : { "value" : "blue" },
-					"item2" : { "value" : "red" }
+					"item1" : "blue",
+					"item2" : "red"
 
 				}, done );
 
 			}.bind( this ) ], done );
+
+		} );
+
+		describe( "And user2 also has some data stored in colours", function() {
+
+			describe( "When I follow the colours link", function() {
+
+				it( "Only returns my data" );
+
+			} );
 
 		} );
 
@@ -127,7 +137,6 @@ describe( "Given the app is configured", function() {
 
 		} );
 
-return;
 		describe( "When I follow the colours link from the API endpoint", function() {
 
 			beforeEach( function( done ) {
