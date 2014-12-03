@@ -7,6 +7,6 @@ module.exports = {
 	name: "test-app",
 	ns: "mda",
 	region: "eu-west-1",
-	dev: true
+	dev: false
 
 };

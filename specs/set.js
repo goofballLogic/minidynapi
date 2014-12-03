@@ -53,9 +53,45 @@ describe( "Given the app is configured", function() {
 
 		describe( "And user2 also has some data stored in colours", function() {
 
+			beforeEach( function( done ) {
+
+				sx.fakeDB.forceItems( this.config, "colours", "user2", {
+
+					"item3" : "pink"
+
+				}, done );
+
+			} );
+
 			describe( "When I follow the colours link", function() {
 
-				it( "Only returns my data" );
+				beforeEach( function( done ) {
+
+					async.series( [ function( done ) {
+
+						sx.agent.get( this, this.root, done );
+
+					}.bind( this ), function( don ) {
+
+						this.coloursLink = sx.linksForRel( this.res, "colours" )[ 0 ];
+						sx.agent.get( this, this.coloursLink.href, done );
+
+					}.bind( this ) ], done );
+
+				} );
+
+				it( "Only returns my data", function() {
+
+					sx.linksForRel( this.res, "item1" ).length
+						.should.equal( 1, "Expected link for item1" );
+					sx.linksForRel( this.res, "item2" ).length
+						.should.equal( 1, "Expected link for item2" );
+					sx.linksForRel( this.res, "self" ).length
+						.should.equal( 1, "Expected self link" );
+					this.res.body.links.length
+						.should.equal( 3, "Expected number of links" );
+
+				} );
 
 			} );
 

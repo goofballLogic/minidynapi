@@ -5,6 +5,12 @@ module.exports = function( app, config ) {
 
 	var dbagent = require( config.dbagent );
 
+	function buildKey( req ) {
+
+		return JSON.stringify( req.params );
+
+	}
+
 	app.get( config.path + "/:set/:uid/:iid", function( req, res, next ) {
 
 		var set = req.params.set;
@@ -14,7 +20,16 @@ module.exports = function( app, config ) {
 		var selfLink = utils.links.buildForUserItem( config, req.permissions, set, uid, iid );
 		var verbs = selfLink.verbs;
 		if( !~verbs.indexOf( "get" ) ) return res.sendStatus( 403 );
-		dbagent.fetchUserItem( config, set, uid, iid, function( err, payload, exists ) {
+
+		var itemsCache = utils.cache.bucket( "items" );
+		var key = buildKey( req );
+		var payload = itemsCache.retrieve( key );
+		if( payload )
+			process.nextTick( fetchUserItemCallback.bind( null, payload, true ) );
+		else
+			dbagent.fetchUserItem( config, set, uid, iid, fetchUserItemCallback );
+
+		function fetchUserItemCallback( err, payload, exists ) {
 
 			if( err ) return next( err );
 			if( !exists ) {
@@ -26,7 +41,7 @@ module.exports = function( app, config ) {
 // TODO: return links
 			res.send( body );
 
-		} );
+		}
 
 	} );
 
@@ -39,6 +54,11 @@ module.exports = function( app, config ) {
 		var selfLink = utils.links.buildForUserItem( config, req.permissions, set, uid, iid );
 		var verbs = selfLink.verbs;
 		if( !~verbs.indexOf( "put" ) ) return res.sendStatus( 403 );
+
+		var itemsCache = utils.cache.bucket( "items" );
+		var key = buildKey( req );
+		itemsCache.remove( key );
+
 		dbagent.setUserItem( config, set, uid, iid, req.body, function( err, iid ) {
 
 			if( err ) return next( err );
@@ -57,6 +77,11 @@ module.exports = function( app, config ) {
 		var selfLink = utils.links.buildForUserItem( config, req.permissions, set, uid, iid );
 		var verbs = selfLink.verbs;
 		if( !~verbs.indexOf( "put" ) ) return res.sendStatus( 403 );
+
+		var itemsCache = utils.cache.bucket( "items" );
+		var key = buildKey( req );
+		itemsCache.remove( key );
+
 		dbagent.removeUserItem( config, set, uid, iid, function( err ) {
 
 			if( err ) return next( err );
